@@ -1,0 +1,14 @@
+.image_preview {
+    max-width: 300px;
+    margin-top: 10px;
+}
+.icon-upload {
+    width: 75px;
+    cursor: pointer;
+    .image {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+    }
+}
