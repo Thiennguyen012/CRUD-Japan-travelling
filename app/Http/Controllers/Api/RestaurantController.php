@@ -95,9 +95,25 @@ class RestaurantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(StoreRestaurantRequest $request, string $id)
     {
-        //
+        $restaurant = $this->restaurant->where('restaurant_id', $id)->first();
+        if (!$restaurant) {
+            return response()->json([
+                'success' => false,
+                'errro' => 'Restaurant not Found!'
+            ]);
+        }
+        // $validate_request = $request->validated();
+
+        $restaurant->update($request->all());
+        // cập nhật lại quan hệ với prefecture
+        $restaurant->load('Prefecture');
+        return response()->json([
+            'success' => true,
+            'message' => 'Restaurant Infomation has been updated',
+            'data' => $restaurant,
+        ]);
     }
 
     /**
@@ -105,6 +121,50 @@ class RestaurantController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $restaurant = $this->restaurant->where('restaurant_id', $id)->first();
+        if (!$restaurant) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ID not match any restaurant!',
+            ]);
+        }
+        $restaurant_name = $restaurant->restaurant_name;
+        $restaurant->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Restaurant ' . $restaurant_name . ' has been deleted successfully!'
+        ]);
+    }
+    public function searchRestaurant($restaurant_name)
+    {
+        $restaurant = $this->restaurant::getRestaurantListByName($restaurant_name);
+        if (!$restaurant) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Not found any restaurant with the name ' . $restaurant_name,
+            ]);
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Result of searching keyword ' . $restaurant_name . ':',
+            'data' => $restaurant,
+        ]);
+    }
+    public function getRestaurantByPrefID($id)
+    {
+        $restaurant = $this->restaurant->where('prefecture_id', $id)->get();
+        $prefecture = $this->prefecture->where('prefecture_id', $id)->first();
+        $prefecture_name = $prefecture->prefecture_name;
+        if ($restaurant->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No restaurant founded in ' . $prefecture_name,
+            ]);
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'List Restaurant in ' . $prefecture_name . ':',
+            'data' => $restaurant,
+        ]);
     }
 }

@@ -28,13 +28,11 @@ class Restaurant extends Model
         return $this->hasOne(Menu::class);
     }
 
-    // lấy ra thông tin nhà hàng theo tên like ... (optionally kèm theo id của prefecture)
-    public static function getRestaurantListByName(string $restaurantName, ?int $prefecture_id = null): array
+    // lấy ra thông tin nhà hàng theo tên like ...
+    public static function getRestaurantListByName(string $restaurantName): array
     {
 
-        $result = Restaurant::where('restaurant_name', 'like', "%{$restaurantName}%")->with('prefecture')->when($prefecture_id, function ($query) use ($prefecture_id) {
-            $query->where('prefecture_id', $prefecture_id);
-        })->get()->toArray();
+        $result = Restaurant::where('restaurant_name', 'like', "%{$restaurantName}%")->get()->toArray();
         return $result;
     }
     // lấy ra tất cả nhà hàng thuộc 1 prefecture

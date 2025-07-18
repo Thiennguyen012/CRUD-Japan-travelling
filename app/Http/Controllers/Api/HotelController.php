@@ -148,7 +148,7 @@ class HotelController extends Controller
         }
     }
     // các function customize
-    public function getHotelByPrefId($prefecture_name)
+    public function getHotelByPrefName($prefecture_name)
     {
         if (!$prefecture_name) {
             return response()->json([
