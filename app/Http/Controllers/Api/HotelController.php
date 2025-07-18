@@ -26,15 +26,15 @@ class HotelController extends Controller
      * Display a listing of the resource.
      */
     // show list của hotel dựa vào prefecture
-    public function index(Request $request)
+    public function index()
     {
-        $hotels = $this->hotel->with('prefecture')->get();
+        $hotel = $this->hotel->with('prefecture')->get();
 
         return response()->json([
             'success' => true,
             'message' => 'All hotels retrieved successfully',
-            'data' => $hotels,
-            'count' => $hotels->count()
+            'count' => $hotel->count(),
+            'data' => $hotel,
         ], 200);
     }
 
