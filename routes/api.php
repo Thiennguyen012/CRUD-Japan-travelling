@@ -12,7 +12,7 @@ Route::prefix('hotels')->group(function () {
     Route::get('prefecture/{prefecture_name}', [HotelController::class, 'getHotelByPrefName']);
 });
 Route::prefix('restaurants')->group(function () {
-    Route::get('{restaurant_name}', [RestaurantController::class, 'searchRestaurant']);
+    Route::get('name/{restaurant_name}', [RestaurantController::class, 'searchRestaurant']);
     Route::get('prefecture/{prefecture_id}', [RestaurantController::class, 'getRestaurantByPrefID']);
 });
 
