@@ -29,5 +29,7 @@ class ServiceProvider extends LServiceProvider
         App::bind(IService\IHotelService::class, Service\HotelService::class);
         App::bind(IService\IPrefectureService::class, Service\PrefectureService::class);
         App::bind(IService\IBookingService::class, Service\BookingService::class);
+        //binding cho IRestaurantService
+        App::bind(IService\IRestaurantService::class, Service\RestaurantServices::class);
     }
 }

@@ -11,6 +11,6 @@ interface IPrefectureService
      * @param array $data
      * @return Collection
      */
-    public function getAll() : Collection;
+    public function getAll(): Collection;
+    public function getPrefNameByID(int $id);
 }
-

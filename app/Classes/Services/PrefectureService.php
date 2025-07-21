@@ -21,8 +21,14 @@ class PrefectureService implements IPrefectureService
     /**
      * @inheritdoc
      */
-    public function getAll() : Collection
+    public function getAll(): Collection
     {
         return $this->prefectureRepository->find();
+    }
+    public function getPrefNameByID(int $id)
+    {
+        $prefecture = $this->prefectureRepository->findOne(['prefecture_id' => $id]);
+        $prefecture_name = $prefecture->prefecture_name;
+        return $prefecture_name;
     }
 }

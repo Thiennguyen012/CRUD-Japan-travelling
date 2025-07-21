@@ -17,7 +17,7 @@ class Restaurant extends Model
     protected $guarded = ['restaurant_id'];
 
     // tạo mối quan hệ với bảng Prefecture
-    public function Prefecture(): BelongsTo
+    public function prefecture(): BelongsTo
     {
         return $this->belongsTo(Prefecture::class);
     }
@@ -38,7 +38,7 @@ class Restaurant extends Model
     // lấy ra tất cả nhà hàng thuộc 1 prefecture
     public static function getRestaurantFromPrefecture(int $prefecture_id): array
     {
-        $result = Restaurant::where('prefecture id', $prefecture_id)->get()->toArray();
+        $result = Restaurant::where('prefecture_id', $prefecture_id)->get()->toArray();
         return $result;
     }
 }

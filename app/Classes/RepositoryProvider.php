@@ -29,5 +29,7 @@ class RepositoryProvider extends ServiceProvider
         App::bind(IRepository\IHotelRepository::class, Repository\HotelRepository::class);
         App::bind(IRepository\IPrefectureRepository::class, Repository\PrefectureRepository::class);
         App::bind(IRepository\IBookingRepository::class, Repository\BookingRepository::class);
+        // binding cho IRestaurantRepository
+        App::bind(IRepository\IRestaurantRepository::class, Repository\RestaurantRepository::class);
     }
 }

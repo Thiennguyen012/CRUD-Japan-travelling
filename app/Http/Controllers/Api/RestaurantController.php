@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Classes\Services\Interfaces\IPrefectureService;
+use App\Classes\Services\Interfaces\IRestaurantService;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreHotelRequest;
+
 use App\Http\Requests\Admin\StoreRestaurantRequest;
-use App\Models\Prefecture;
-use App\Models\Restaurant;
-use Illuminate\Http\Request;
+
 
 class RestaurantController extends Controller
 {
-    protected $prefecture;
-    protected $restaurant;
+    protected $prefectureService;
+    protected $restaurantService;
 
     // tạo constructor
-    public function __construct(Restaurant $restaurant, Prefecture $prefecture)
+    public function __construct(IRestaurantService $restaurantService, IPrefectureService $prefectureService)
     {
-        $this->prefecture = $prefecture;
-        $this->restaurant = $restaurant;
+        $this->prefectureService = $prefectureService;
+        $this->restaurantService = $restaurantService;
     }
 
     /**
@@ -27,12 +27,12 @@ class RestaurantController extends Controller
     // Hiển thị list tất cả các nhà hàng
     public function index()
     {
-        $restaurant = $this->restaurant->with('prefecture')->get();
+        $data = $this->restaurantService->listAllRestaurant();
         return response()->json([
             'success' => true,
             'message' => 'List all the Restaurants',
-            'count' => $restaurant->count(),
-            'data' => $restaurant
+            'count' => $data->count(),
+            'data' => $data
         ]);
     }
 
@@ -49,12 +49,12 @@ class RestaurantController extends Controller
      */
     public function store(StoreRestaurantRequest $request)
     {
-        $restaurant = $this->restaurant->fill($request->all());
-        $restaurant->save();
+
+        $data = $this->restaurantService->newRestaurant($request);
         return response()->json([
             'success' => true,
             'message' => 'New restaurant has been added!',
-            'data' => $restaurant,
+            'data' => $data,
         ]);
     }
 
@@ -63,20 +63,12 @@ class RestaurantController extends Controller
      */
     public function show($id)
     {
-        if (!$id) {
-            return response()->json([
-                'success' => false,
-                'error' => 'ID not found!',
-            ]);
-        }
-        $restaurant = $this->restaurant->where('restaurant_id', $id)->first();
-        if (!$restaurant) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Restaurant not found!',
-            ]);
-        }
+        $restaurant = $this->restaurantService->restaurantDetail($id);
         $restaurant_name = $restaurant->restaurant_name;
+        if (!$restaurant) return response()->json([
+            'success' => false,
+            'error' => 'Restaurant not found!',
+        ]);
         return response()->json([
             'success' => true,
             'message' => 'Detail of Restaurant ' . $restaurant_name,
@@ -95,20 +87,15 @@ class RestaurantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(StoreRestaurantRequest $request, string $id)
+    public function update(StoreRestaurantRequest $request, int $id)
     {
-        $restaurant = $this->restaurant->where('restaurant_id', $id)->first();
+        $restaurant = $this->restaurantService->updateRestaurant($request, $id);
         if (!$restaurant) {
             return response()->json([
                 'success' => false,
-                'errro' => 'Restaurant not Found!'
+                'error' => 'Restaurant not Found!'
             ]);
         }
-        // $validate_request = $request->validated();
-
-        $restaurant->update($request->all());
-        // cập nhật lại quan hệ với prefecture
-        $restaurant->load('Prefecture');
         return response()->json([
             'success' => true,
             'message' => 'Restaurant Infomation has been updated',
@@ -119,25 +106,23 @@ class RestaurantController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(int $id)
     {
-        $restaurant = $this->restaurant->where('restaurant_id', $id)->first();
+        $restaurant = $this->restaurantService->deleteRestaurant($id);
         if (!$restaurant) {
             return response()->json([
                 'success' => false,
                 'error' => 'ID not match any restaurant!',
             ]);
         }
-        $restaurant_name = $restaurant->restaurant_name;
-        $restaurant->delete();
         return response()->json([
             'success' => true,
-            'message' => 'Restaurant ' . $restaurant_name . ' has been deleted successfully!'
+            'message' => 'Restaurant ' . $restaurant . ' has been deleted successfully!'
         ]);
     }
     public function searchRestaurant($restaurant_name)
     {
-        $restaurant = $this->restaurant::getRestaurantListByName($restaurant_name);
+        $restaurant = $this->restaurantService->searchRestaurantByName($restaurant_name);
         if (!$restaurant) {
             return response()->json([
                 'success' => false,
@@ -152,13 +137,12 @@ class RestaurantController extends Controller
     }
     public function getRestaurantByPrefID($id)
     {
-        $restaurant = $this->restaurant->where('prefecture_id', $id)->get();
-        $prefecture = $this->prefecture->where('prefecture_id', $id)->first();
-        $prefecture_name = $prefecture->prefecture_name;
-        if ($restaurant->isEmpty()) {
+        $restaurant = $this->restaurantService->getRestaurantByPrefID($id);
+        $prefecture_name = $this->prefectureService->getPrefNameByID($id);
+        if (!$restaurant) {
             return response()->json([
                 'success' => false,
-                'error' => 'No restaurant founded in ' . $prefecture_name,
+                'error' => 'No restaurant founded '
             ]);
         }
         return response()->json([
