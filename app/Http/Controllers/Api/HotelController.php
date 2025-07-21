@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Classes\Services\PrefectureService;
+use App\Classes\Services\HotelService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreHotelRequest;
 use App\Models\Hotel;
@@ -13,13 +15,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class HotelController extends Controller
 {
-    protected $prefecture;
-    protected $hotel;
-    // tạo constructor
-    public function __construct(Prefecture $prefecture, Hotel $hotel)
+    protected $prefectureService;
+    protected $hotelService;
+    // tạo constructor inject service vào
+    public function __construct(PrefectureService $prefectureService, HotelService $hotelService)
     {
-        $this->prefecture = $prefecture;
-        $this->hotel = $hotel;
+        $this->prefectureService = $prefectureService;
+        $this->hotelService = $hotelService;
     }
 
     /**
@@ -28,7 +30,7 @@ class HotelController extends Controller
     // show list của hotel dựa vào prefecture
     public function index()
     {
-        $hotel = $this->hotel->with('prefecture')->get();
+        $hotel = $this->hotelService->listHotel();
 
         return response()->json([
             'success' => true,
@@ -52,8 +54,7 @@ class HotelController extends Controller
     public function store(StoreHotelRequest $request)
     {
         // pass qua request, thêm dữ liệu mới 
-        $hotel = $this->hotel->fill($request->all());
-        $hotel->save();
+        $hotel = $this->hotelService->newHotel($request);
         return response()->json([
             'success' => true,
             'message' => 'New Hotel has been added successfully!',
@@ -67,24 +68,21 @@ class HotelController extends Controller
     // show data cua hotel voi id truyen vao
     public function show(string $id)
     {
-        if (!$id) {
+        try {
+            $hotel = $this->hotelService->findById($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail of Hotel ID: ' . $id,
+                'data' => $hotel,
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'No Hotel ID provided!',
-            ]);
+                'error' => 'Hotel with ID ' . $id . ' not found!',
+                'message' => 'Please provide a valid hotel ID'
+            ], 404);
         }
-        $hotel = $this->hotel->where('hotel_id', $id)->first();
-        if (!$hotel) {
-            return response()->json([
-                'success' => false,
-                'error' => 'No Hotel Id matched with ' . $id,
-            ]);
-        }
-        return response()->json([
-            'success' => 'true',
-            'message' => 'Detail of Hotel ID: ' . $id,
-            'data' => $hotel,
-        ]);
     }
 
     /**
@@ -100,27 +98,18 @@ class HotelController extends Controller
      */
     // Dùng phương thức PUT/PATCH
     // update thông tin của 1 hotel
-    public function update(StoreHotelRequest $request, string $id)
+    public function update(StoreHotelRequest $request, int $id)
     {
-        $hotel = $this->hotel->where('hotel_id', $id)->first();
+        $hotel = $this->hotelService->updateById($request, $id);
         // nếu dùng ->get() thì tức là mảng hotel vẫn tồn tại nhưng số phần tử là 0
         // dùng ->first() trả về object nếu không có bản ghi thì sẽ trả về null
+
         if (!$hotel) {
             return response()->json([
                 'success' => false,
                 'error' => 'Hotel not Found!'
-            ]);
+            ], 404);
         }
-        // lấy dữ liệu đã qua validate
-        $validated_data = $request->validated();
-
-        // cập nhật dữ liệu
-        // lúc này biến hotel đã có giá trị rồi
-        $hotel->update($validated_data);
-
-        // cập nhật quan hệ với các class khác
-        // cụ thể là với prefecture vì hotel belong to prefecture
-        $hotel->load('prefecture');
         return response()->json([
             'success' => true,
             'message' => 'Hotel with ID: ' . $id . ' has been updated successfully!',
@@ -133,47 +122,50 @@ class HotelController extends Controller
      */
     public function destroy(string $id)
     {
-        $hotel = $this->hotel->where('hotel_id', $id)->first();
-        if (!$hotel) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Hotel not Found!'
-            ]);
-        } else {
-            $hotel->delete();
+        try {
+            // Lấy hotel object trước
+            $hotel = $this->hotelService->findById($id);
+
+            // Kiểm tra xem có thể xóa không (nếu có booking thì không được xóa)
+            if (!$this->hotelService->canDeleteHotel($hotel)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot delete hotel because it has existing bookings!',
+                    'message' => 'Please remove all bookings first'
+                ], 400);
+            }
+
+            // Gọi hàm delete với hotel object
+            $this->hotelService->delete($hotel);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Hotel id ' . $id . ' has been deleted successfully!',
-            ]);
+                'message' => 'Hotel ID ' . $id . ' has been deleted successfully!',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Hotel with ID ' . $id . ' not found!',
+                'message' => 'Please provide a valid hotel ID'
+            ], 404);
         }
     }
     // các function customize
     public function getHotelByPrefName($prefecture_name)
     {
-        if (!$prefecture_name) {
+        $hotel = $this->hotelService->getHotelByPrefName($prefecture_name);
+        if (!$hotel) {
             return response()->json([
                 'success' => false,
-                'error' => 'No prefecture name provided',
+                'error' => 'Not found any restaurant in prefecture name ' . $prefecture_name,
             ], 400);
         }
-
-        $prefecture = $this->prefecture->where('prefecture_name_alpha', $prefecture_name)->first();
-
-        if (!$prefecture) {
-            return response()->json([
-                'success' => false,
-                'error' => 'No prefecture matched with ' . $prefecture_name,
-            ], 404);
-        }
-
-        $hotels = $this->hotel->where('prefecture_id', $prefecture->prefecture_id)->with('prefecture')->get();
 
         return response()->json([
             'success' => true,
             'message' => 'List hotel of ' . $prefecture_name,
-            'prefecture' => $prefecture,
-            'data' => $hotels,
-            'count' => $hotels->count(),
+            'data' => $hotel,
+            'count' => $hotel->count(),
         ], 200);
     }
 }

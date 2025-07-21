@@ -2,7 +2,9 @@
 
 namespace App\Classes\Services\Interfaces;
 
+use App\Http\Requests\Admin\StoreHotelRequest;
 use App\Models\Hotel;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface IHotelService
@@ -14,7 +16,7 @@ interface IHotelService
      * 
      * @return Hotel
      */
-    public function create(array $data) : Hotel;
+    public function create(array $data): Hotel;
 
     /**
      * Update hotel
@@ -22,7 +24,7 @@ interface IHotelService
      * @param Hotel $hotel
      * @param array $data
      */
-    public function update(Hotel $hotel, array $data) : bool;
+    public function update(Hotel $hotel, array $data): bool;
 
     /**
      * find hotel by id
@@ -31,7 +33,7 @@ interface IHotelService
      * 
      * @return Hotel|ModelNotFoundException
      */
-    public function findById(?int $hotelId = null) : Hotel|ModelNotFoundException;
+    public function findById(?int $hotelId = null): Hotel|ModelNotFoundException;
 
     /**
      * Check if this hotel can be deleted?
@@ -40,13 +42,17 @@ interface IHotelService
      * 
      * @return bool
      */
-    public function canDeleteHotel(Hotel $hotel) : bool;
+    public function canDeleteHotel(Hotel $hotel): bool;
 
     /**
      * Delete hotel
      * 
      * @param Hotel $hotel
      */
-    public function delete(Hotel $hotel) : void;
-}
+    public function delete(Hotel $hotel): void;
 
+    public function listHotel();
+    public function newHotel(StoreHotelRequest $request);
+    public function updateById(StoreHotelRequest $request, int $id);
+    public function getHotelByPrefName(string $prefecture_name);
+}
